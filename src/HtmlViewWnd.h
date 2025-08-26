@@ -1,6 +1,73 @@
 #pragma once
+#include <wx/wx.h>
 #include "web_page.h"
 #include "web_history.h"
+
+
+class wxLiteHtmlWindow : public wxWindow
+{
+    wxDECLARE_EVENT_TABLE();
+public:
+    wxLiteHtmlWindow(wxWindow* parent, wxWindowID id = wxID_ANY,
+        const wxPoint& pos = wxDefaultPosition,
+        const wxSize& size = wxDefaultSize,
+        long style = 0,
+        const wxString& name = wxASCII_STR(wxPanelNameStr));
+
+    void Lock() { m_sync.Enter(); }
+    
+    void Unlock() { m_sync.Leave(); }
+
+    void Refresh();
+
+    void Back();
+
+    void Forward();
+
+    void SetCaption();
+
+    bool IsValidPage(bool withLock = true);
+
+    web_page* GetPage(bool withLock = true);
+
+    void Render(bool calcTime = false, bool doRedraw = true, int calcRepeat = 1);
+
+    void GetClientRect(litehtml::position& client) const;
+
+    void ShowHash(std::wstring& hash);
+
+    void UpdateHistory();
+
+    void CalcDraw(int calcRepeat = 1);
+
+protected:
+    void OnPaint(wxPaintEvent& event);
+
+    void OnSize(wxSizeEvent& event);
+
+private:
+    void Redraw(LPRECT rcDraw, bool update);
+
+    void UpdateScroll();
+
+    void UpdateCursor();
+
+    void CreateDIB(int width, int height);
+
+    void ScrollTo(int newLeft, int newTop);
+
+private:
+    int m_top;
+    int m_left;
+    int m_max_top;
+    int m_max_left;
+    web_history m_history;
+    web_page* m_page;
+    web_page* m_page_next;
+    wxCriticalSection m_sync;
+    simpledib::dib m_dib;
+
+};
 
 #define HTMLVIEWWND_CLASS	L"HTMLVIEW_WINDOW"
 

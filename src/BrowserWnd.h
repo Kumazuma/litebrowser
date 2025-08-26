@@ -1,5 +1,6 @@
 #pragma once
 
+
 #define BROWSERWND_CLASS	L"BROWSER_WINDOW"
 
 class CHTMLViewWnd;

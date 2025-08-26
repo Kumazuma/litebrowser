@@ -5,6 +5,28 @@
 #include <strsafe.h>
 #include "BrowserWnd.h"
 
+BEGIN_EVENT_TABLE(wxLiteHtmlWindow, wxWindow)
+    EVT_PAINT(wxLiteHtmlWindow::OnPaint)
+    EVT_SIZE(wxLiteHtmlWindow::OnSize)
+END_EVENT_TABLE()
+
+wxLiteHtmlWindow::wxLiteHtmlWindow(wxWindow* parent, wxWindowID id,
+    const wxPoint& pos, const wxSize& size, long style, const wxString& name)
+    : wxWindow(parent, id, pos, size, style, name)
+{
+    // Initialization code for the HTML view can go here
+    m_top = 0;
+    m_left = 0;
+    m_max_top = 0;
+    m_max_left = 0;
+    m_page = nullptr;
+    m_page_next = nullptr;
+}
+
+void wxLiteHtmlWindow::Refresh()
+{
+}
+
 CHTMLViewWnd::CHTMLViewWnd(HINSTANCE hInst, CBrowserWnd* parent)
 {
 	m_parent		= parent;

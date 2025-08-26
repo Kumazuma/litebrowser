@@ -3,6 +3,7 @@
 #include "HtmlViewWnd.h"
 #include "ToolbarWnd.h"
 
+
 CBrowserWnd::CBrowserWnd(HINSTANCE hInst)
 {
 	m_hInst		= hInst;
