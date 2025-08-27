@@ -27,6 +27,15 @@ void wxLiteHtmlWindow::Refresh()
 {
 }
 
+void wxLiteHtmlWindow::OnPaint(wxPaintEvent& event)
+{
+}
+
+void wxLiteHtmlWindow::OnSize(wxSizeEvent& event)
+{
+
+}
+
 CHTMLViewWnd::CHTMLViewWnd(HINSTANCE hInst, CBrowserWnd* parent)
 {
 	m_parent		= parent;

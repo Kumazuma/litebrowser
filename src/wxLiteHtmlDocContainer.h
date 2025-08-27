@@ -1,10 +1,36 @@
 #pragma once
 #include <wx/wx.h>
 #include <litehtml.h>
+#include <wx/filesys.h>
 
 class wxLiteHtmlDocContainer : public litehtml::document_container
 {
 public:
+    struct ClipBox
+    {
+        typedef std::vector<ClipBox> vector;
+        litehtml::position	box;
+        litehtml::border_radiuses radius;
+
+        ClipBox(const litehtml::position& vBox, const litehtml::border_radiuses& vRad)
+        {
+            box = vBox;
+            radius = vRad;
+        }
+
+        ClipBox(const ClipBox& val)
+        {
+            box = val.box;
+            radius = val.radius;
+        }
+        ClipBox& operator=(const ClipBox& val)
+        {
+            box = val.box;
+            radius = val.radius;
+            return *this;
+        }
+    };
+
     explicit wxLiteHtmlDocContainer(wxWindow* window);
 
     virtual ~wxLiteHtmlDocContainer();
@@ -26,13 +52,11 @@ public:
     void draw_list_marker(litehtml::uint_ptr hdc, const litehtml::list_marker& marker) override;
 
     void get_image_size(const char* src, const char* baseurl, litehtml::size& sz) override;
-
-    void draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bg) override;
-
-    void draw_borders(litehtml::uint_ptr hdc, const litehtml::borders& borders, const litehtml::position& draw_pos, bool root) override;
-
-    void draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bg) override;
     
+    void load_image(const char* src, const char* baseurl, bool redraw_on_ready) override;
+
+    void draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bg) override;
+
     void draw_borders(litehtml::uint_ptr hdc, const litehtml::borders& borders, const litehtml::position& draw_pos, bool root) override;
 
     void set_caption(const char* caption) override;
@@ -68,7 +92,11 @@ public:
 private:
     wxString MakeUri(const char* src, const char* baseurl) const;
 
+    void UpdateClipRegion();
+
 private:
+    ClipBox::vector m_clips;
     wxFileSystem m_fileSystem;
     wxWindow* m_window;
+    wxRegion m_clipRegion;
 };
