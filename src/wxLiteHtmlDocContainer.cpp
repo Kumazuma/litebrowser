@@ -1,6 +1,8 @@
 #include "wxLiteHtmlDocContainer.h"
 #include <wx/dcclient.h>
 #include <wx/url.h>
+#include <wx/graphics.h>
+
 wxLiteHtmlDocContainer::wxLiteHtmlDocContainer(wxWindow* window)
     : m_window(window)
 {
@@ -104,7 +106,7 @@ litehtml::uint_ptr wxLiteHtmlDocContainer::create_font(const char* faceName, int
         fm->ascent = matrix.ascent;
         fm->descent = matrix.descent;
         fm->height = matrix.height;
-        fm->x_height = matrix.ascent - matrix.internalLeading;
+        fm->x_height = matrix.averageWidth;
         if (italic == litehtml::font_style_italic || decoration)
         {
             fm->draw_spaces = true;
@@ -136,16 +138,17 @@ int wxLiteHtmlDocContainer::text_width(const char* text, litehtml::uint_ptr hFon
 
 void wxLiteHtmlDocContainer::draw_text(litehtml::uint_ptr hdc, const char* text, litehtml::uint_ptr hFont, litehtml::web_color color, const litehtml::position& pos)
 {
-    auto dc = reinterpret_cast<wxDC*>(hdc);
+    auto dc = reinterpret_cast<wxGraphicsContext*>(hdc);
     auto textFromUtf8 = wxString::FromUTF8(text);
     auto font = reinterpret_cast<wxFont*>(hFont);
     wxPoint drawPos(pos.left(), pos.top());
-
-    dc->SetFont(*font);
-    auto matrix = dc->GetFontMetrics();
-    drawPos.y -= matrix.descent;
-    dc->SetTextForeground(wxColour(color.red, color.green, color.blue));
-    dc->DrawText(textFromUtf8, drawPos);
+    auto fontGraphics = dc->CreateFont(*font, wxColour(color.red, color.green, color.blue));
+    dc->SetFont(fontGraphics);
+    // For Font Matrix
+    wxClientDC tempDc(m_window);
+    tempDc.SetFont(*font);
+    auto matrix = tempDc.GetFontMetrics();
+    dc->DrawText(textFromUtf8, pos.left(), pos.top());
 }
 
 int wxLiteHtmlDocContainer::pt_to_px(int pt) const
@@ -156,7 +159,7 @@ int wxLiteHtmlDocContainer::pt_to_px(int pt) const
 
 int wxLiteHtmlDocContainer::get_default_font_size() const
 {
-    return wxLiteHtmlDocContainer::pt_to_px(8);
+    return wxLiteHtmlDocContainer::pt_to_px(12);
 }
 
 const char* wxLiteHtmlDocContainer::get_default_font_name() const
@@ -166,29 +169,30 @@ const char* wxLiteHtmlDocContainer::get_default_font_name() const
 
 void wxLiteHtmlDocContainer::draw_list_marker(litehtml::uint_ptr hdc, const litehtml::list_marker& marker)
 {
-    auto dc = reinterpret_cast<wxDC*>(hdc);
+    auto dc = reinterpret_cast<wxGraphicsContext*>(hdc);
     if(marker.marker_type == litehtml::list_style_type::list_style_type_circle)
     {
         dc->SetBrush(*wxBLACK_BRUSH);
-        dc->DrawCircle(wxPoint(marker.pos.x, marker.pos.y), marker.pos.width);
+        dc->DrawEllipse(marker.pos.x, marker.pos.y, marker.pos.width, marker.pos.height);
     }
     else if(marker.marker_type == litehtml::list_style_type::list_style_type_disc)
     {
         dc->SetPen(*wxBLACK_PEN);
         dc->SetBrush(*wxTRANSPARENT_BRUSH);
-        dc->DrawCircle(wxPoint(marker.pos.x, marker.pos.y), marker.pos.width);
+        dc->DrawEllipse(marker.pos.x, marker.pos.y, marker.pos.width, marker.pos.height);
     }
     else if(marker.marker_type == litehtml::list_style_type::list_style_type_square)
     {
         dc->SetBrush(*wxBLACK_BRUSH);
-        dc->DrawRectangle(wxRect(marker.pos.x, marker.pos.y, marker.pos.width, marker.pos.height));
+        dc->DrawRectangle(marker.pos.x, marker.pos.y, marker.pos.width, marker.pos.height);
     }
     else if(marker.marker_type == litehtml::list_style_type::list_style_type_decimal)
     {
         auto font = reinterpret_cast<wxFont*>(marker.font);
-        dc->SetFont(*font);
-        dc->SetTextForeground(wxColour(marker.color.red, marker.color.green, marker.color.blue));
-        dc->DrawText(wxString::Format("%d.", marker.index), wxPoint(marker.pos.x, marker.pos.y));
+        // TODO: Not implemented yet!
+        // dc->SetFont(*font);
+        // dc->SetTextForeground(wxColour(marker.color.red, marker.color.green, marker.color.blue));
+        // dc->DrawText(wxString::Format("%d.", marker.index), wxPoint(marker.pos.x, marker.pos.y));
     }
 }
 
@@ -224,10 +228,11 @@ void wxLiteHtmlDocContainer::load_image(const char* src, const char* baseurl, bo
 
 void wxLiteHtmlDocContainer::draw_background(litehtml::uint_ptr hdc, const std::vector<litehtml::background_paint>& bg)
 {
-    auto dc = reinterpret_cast<wxDC*>(hdc);
+    auto dc = reinterpret_cast<wxGraphicsContext*>(hdc);
     if (!m_clipRegion.Empty())
     {
-        dc->SetClippingRegion(m_clipRegion);
+        // TODO: Not implemented yet!
+        // dc->SetClippingRegion(m_clipRegion);
     }
 
     auto drawBg = [dc](const litehtml::background_paint& bg)
@@ -247,10 +252,51 @@ void wxLiteHtmlDocContainer::draw_background(litehtml::uint_ptr hdc, const std::
 
 void wxLiteHtmlDocContainer::draw_borders(litehtml::uint_ptr hdc, const litehtml::borders& borders, const litehtml::position& draw_pos, bool root)
 {
-    auto dc = reinterpret_cast<wxDC*>(hdc);
+    auto dc = reinterpret_cast<wxGraphicsContext*>(hdc);
     if(!m_clipRegion.Empty())
     {
-        dc->SetClippingRegion(m_clipRegion);
+        // TODO: Not implemented yet!
+        // dc->SetDeviceClippingRegion(m_clipRegion);
+    }
+
+    if (!borders.is_visible())
+    {
+        return;
+    }
+
+    // 모든 border가 동일한 경우 최적화
+    if (borders.bottom.color == borders.bottom.color &&
+        borders.bottom.style == borders.bottom.style &&
+        borders.bottom.width == borders.bottom.width &&
+        borders.left.color == borders.left.color &&
+        borders.left.style == borders.left.style &&
+        borders.left.width == borders.left.width &&
+        borders.right.color == borders.right.color &&
+        borders.right.style == borders.right.style &&
+        borders.right.width == borders.right.width &&
+        borders.top.color == borders.top.color &&
+        borders.top.style == borders.top.style &&
+        borders.top.width == borders.top.width)
+    {
+        wxPenStyle style = wxPENSTYLE_SOLID;
+        switch (borders.top.style)
+        {
+            case litehtml::border_style::border_style_dashed:
+                style = wxPENSTYLE_SHORT_DASH;
+                break;
+            case litehtml::border_style::border_style_dotted:
+                style = wxPENSTYLE_DOT;
+                break;
+            case litehtml::border_style::border_style_double:
+                style = wxPENSTYLE_DOT_DASH;
+                break;
+        }
+
+        wxPen pen(wxColour(borders.top.color.red, borders.top.color.green, borders.top.color.blue), borders.top.width, style);
+        dc->SetPen(pen);
+        dc->SetBrush(*wxTRANSPARENT_BRUSH);
+        dc->DrawRectangle(draw_pos.x, draw_pos.y, draw_pos.width, draw_pos.height);
+        return;
     }
 
     // NOTE: 일단 rounded border는 지원하지 않음
@@ -277,7 +323,7 @@ void wxLiteHtmlDocContainer::draw_borders(litehtml::uint_ptr hdc, const litehtml
 
             wxPen pen(wxColour(border.color.red, border.color.green, border.color.blue), border.width, style);
             dc->SetPen(pen);
-            dc->DrawLine(start, end);
+            dc->StrokeLine(start.x, start.y, end.x, end.y);
         };
 
     wxRect rect(draw_pos.x, draw_pos.y, draw_pos.width, draw_pos.height);
@@ -396,7 +442,7 @@ void wxLiteHtmlDocContainer::get_media_features(litehtml::media_features& media)
     media.color = 8;
     media.monochrome = 0;
     media.color_index = 256;
-    media.resolution = 96;
+    media.resolution = m_window->GetDPI().x;
 }
 
 void wxLiteHtmlDocContainer::get_language(litehtml::string& language, litehtml::string& culture) const

@@ -22,7 +22,7 @@ private:
 
 };
 
-const char* g_html = R"(
+const char* g_html = u8R"(
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,7 +31,7 @@ const char* g_html = R"(
     <title>LiteHTML Test</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: ¸¼Àº°íµñ, sans-serif;
             margin: 20px;
             background-color: #f4f4f4;
             line-height: 1.6;
@@ -89,12 +89,14 @@ bool wxLiteBrowserApp::OnInit()
 //        dc.Clear();
         if (m_doc)
         {
+            auto context = wxGraphicsContext::Create(dc);
             wxSize size = m_frame->GetClientSize();
             m_doc->render(size.GetWidth());
 
             litehtml::position clip(0, 0, size.GetWidth(), size.GetHeight());
 
-            m_doc->draw((litehtml::uint_ptr)&dc, 0, 0, &clip);
+            m_doc->draw((litehtml::uint_ptr)context, 0, 0, &clip);
+            delete context;
         }
 
         });
